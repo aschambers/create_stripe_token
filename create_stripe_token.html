@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Stripe Set-up</title>
+</head>
+<script type="text/javascript" src="https://js.stripe.com/v2/"></script>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+<script>
+
+	Stripe.setPublishableKey('insert-test-stripe-api-key-here');
+
+	function stripeResponseHandler(status, response) {
+        if (response.error) {
+            // make submit button work again
+            $('.submit-button').removeAttr("disabled");
+            // alert user of the error message from stripe
+            alert(response.error.message);
+        } else {
+            // token which is generated from form values (Stripe.card.createToken)
+            var token = response.id;
+            // append a hidden input to form containing the stripe token to be recieved by the server as (req.body['stripeToken']);
+            $("#payment-form").append("<input type='hidden' name='stripeToken' value='" + token + "' />")
+            // submit form with stripe token as hidden input and send only that input field to server
+            $("#payment-form").get(0).submit();
+        }
+    }
+
+	$(document).ready(function() {
+        $("#payment-form").submit(function(event) {
+        	event.preventDefault();
+            // disable the submit button to prevent repeated clicks
+            $('.submit-button').attr("disabled", "disabled");
+            // createToken returns immediately - the supplied callback submits the form if there are no errors
+            Stripe.card.createToken({
+			  	number: $('.card-number').val(),
+			  	cvc: $('.card-cvc').val(),
+			  	exp_month: $('.card-expiry-month').val(),
+			  	exp_year: $('.card-expiry-year').val()
+			}, stripeResponseHandler);
+			return false;
+        });
+    });
+</script>
+<body>
+    <form action="/sendinfo" method="POST" id="payment-form">
+        <div class="form-row">
+            <label>Card Number</label>
+            <input type="text" size="20" autocomplete="off" class="card-number" />
+        </div>
+        <div class="form-row">
+            <label>CVC</label>
+            <input type="text" size="4" autocomplete="off" class="card-cvc" />
+        </div>
+        <div class="form-row">
+            <label>Expiration (MM/YYYY)</label>
+            <input type="text" size="2" class="card-expiry-month"/>
+            <span> / </span>
+            <input type="text" size="4" class="card-expiry-year"/>
+        </div>
+        <button type="submit" class="submit-button">Submit</button>
+    </form>
+</body>
+</html>
